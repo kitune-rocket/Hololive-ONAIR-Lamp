@@ -50,7 +50,7 @@ class StateMachine:
     """
     Generic controller handling state transitions.
     """
-    def __init__(self, context, log_func=print):
+    def __init__(self, context, log_func=(lambda *args, **kwargs: None)):
         self.context = context       # User-defined hardware/data context
         self.current_state = None
         self.states = {}             # Storage for state instances
