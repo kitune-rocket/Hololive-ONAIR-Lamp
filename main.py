@@ -1,9 +1,10 @@
-from machine import Pin
+from machine import freq
 from micropython import const
 import time, ntptime
 import requests
 import boot
 from fsm import *
+from spwm import *
 
 class Datetime:
     @staticmethod
@@ -164,11 +165,13 @@ class OnAir(State):
 ####
 
 def init():
+    freq(240_000_000) # Highst frequency of ESP32-S2
     ntptime.settime()
 
 def main():
     context = Context()
-    
+    spwm = SPWM(44)
+
     init()
 
     fsm = StateMachine(context)
@@ -179,8 +182,11 @@ def main():
     fsm.start(IdleState)
     while True :
         fsm.run_cycle()
-        time.sleep(1) 
+        time.sleep(1)
+        spwm.start(440)
+        time.sleep(1)
+        spwm.stop()
 
 if __name__ == '__main__' :
-    # main()
+    main()
     pass
