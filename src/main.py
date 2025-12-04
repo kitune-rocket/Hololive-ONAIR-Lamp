@@ -90,6 +90,7 @@ class Holodex:
         query_params.append(f'limit=5')
         query_params.append(f'order=asc')
         query_params.append(f'sort=start_scheduled')
+        query_params.append(f'include=live_info')
         return base_url + '?' + '&'.join(query_params)
 
     # Blokcing api call
@@ -174,11 +175,11 @@ class Waiting(State):
 
 class OnAir(State):
     def on_enter(self, ctx):
-        ctx.light_on()
-        ctx.play()
+        ctx.desklight.light_on()
+        ctx.desklight.play()
 
     def on_exit(self, ctx):
-        ctx.light_off()
+        ctx.desklight.light_off()
 
     def update(self, ctx):
         if ctx.get_timer() < const(5 * 60 * 1000):
