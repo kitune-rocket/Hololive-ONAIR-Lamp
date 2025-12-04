@@ -1,4 +1,4 @@
-from machine import freq
+from machine import freq, Pin
 from micropython import const
 import time, ntptime
 import requests
@@ -47,7 +47,35 @@ class Datetime:
         return int(Datetime.diff(datetime_str) / 3600)
 
 class Desklight:
-    pass
+    def __init__(self, light_pin:int, spwm_pin:int, trigger_pin:int, amp_pin:int):
+        self._light = Pin(light_pin, Pin.OUT)
+        self._light.off()
+        self._spwm = SPWM(spwm_pin)
+        self._trg = Pin(trigger_pin, Pin.OUT)
+        self._trg.off()
+        self._amp = Pin(amp_pin, Pin.OUT)
+        self._amp.off()
+        self._audio_data = boot.config['audio_data']
+
+    def play(self):
+        self._amp.on()
+        for d in self._audio_data :
+            if d[1] == 0 :
+                self._spwm.stop()
+            else :
+                self._spwm.start(d[1])
+            self._trg.on()
+            time.sleep_us(1000)
+            self._trg.off()
+            time.sleep_us(d[0]-1000)
+        self._amp.off()
+        self._spwm.stop()
+    
+    def light_on(self):
+        self._light.on()
+
+    def light_off(self):
+        self._light.off()
 
 class Holodex:
     def __init__(self, token, channelId):
@@ -77,6 +105,7 @@ class Context:
         self.token = boot.config['token']
         self.channelId = boot.config['channelId']
         self.api = Holodex(boot.config['token'], boot.config['channelId'])
+        self.desklight = Desklight(11, 34, 33, 12) #self.desklight = Desklight(11, 34, 33, 35)
     
     def log(self, msg):
         print(f'{msg}')
@@ -145,10 +174,11 @@ class Waiting(State):
 
 class OnAir(State):
     def on_enter(self, ctx):
-        pass
+        ctx.light_on()
+        ctx.play()
 
     def on_exit(self, ctx):
-        pass
+        ctx.light_off()
 
     def update(self, ctx):
         if ctx.get_timer() < const(5 * 60 * 1000):
@@ -179,13 +209,10 @@ def main():
     fsm.add_state(Waiting())
     fsm.add_state(OnAir())
 
-    fsm.start(IdleState)
+    fsm.start(OnAir) #fsm.start(IdleState)
     while True :
         fsm.run_cycle()
         time.sleep(1)
-        spwm.start(440)
-        time.sleep(1)
-        spwm.stop()
 
 if __name__ == '__main__' :
     main()
