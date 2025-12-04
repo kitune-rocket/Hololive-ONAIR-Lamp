@@ -24,7 +24,7 @@ from urllib import request
 PROJECT_NAME = "hololive"
 FIRMWARE_RELEASE = "https://micropython.org/resources/firmware/ESP32_GENERIC_S2-20250911-v1.26.1.bin"
 SERIAL_PORT = None
-DEBUG = True
+DEBUG = False
 # ==============================================================================
 
 class MockProcessResult:
@@ -82,7 +82,7 @@ def check_venv():
     active_venv = result.stdout.strip()
     if active_venv != PROJECT_NAME:
         print(f"Error: Pyenv virtualenv '{PROJECT_NAME}' is not active.", file=sys.stderr)
-        print(f"Please run 'pyenv activate {PROJECT_NAME}' first.", file=sys.stderr)
+        print(f"Please run 'pyenv shell {PROJECT_NAME}' first.", file=sys.stderr)
         sys.exit(1)
 
 
@@ -121,7 +121,7 @@ def setup_environment():
         print("[DRY RUN] Would install dependencies from requirements.txt")
 
     print("\nSetup complete. Please activate the virtual environment manually:")
-    print(f"  pyenv activate {PROJECT_NAME}")
+    print(f"  pyenv shell {PROJECT_NAME}")
 
 
 def flash_firmware(port, baud="460800"):
@@ -156,15 +156,17 @@ def flash_firmware(port, baud="460800"):
     print(f"Using firmware: {firmware_path}")
 
     print("Erasing flash...")
-    if not run_command(["esptool.py", "--port", port, "erase_flash"]):
+    # if not run_command(["esptool.py", "--port", port, "erase_flash"]):
+    if not run_command(["esptool.py", "erase_flash"]):
         print("Error erasing flash. Please check the connection and try again.", file=sys.stderr)
         sys.exit(1)
 
     print("Writing firmware...")
-    write_command = [
-        "esptool.py", "--port", port, "--baud", baud,
-        "write_flash", "0x1000", firmware_path
-    ]
+    # write_command = [
+    #     "esptool.py", "--port", port, "--baud", baud,
+    #     "write_flash", "0x1000", firmware_path
+    # ]
+    write_command = ["esptool.py", "--baud", baud, "write_flash", "0x1000", firmware_path]
     if not run_command(write_command):
         print("Error writing firmware.", file=sys.stderr)
         sys.exit(1)
@@ -273,9 +275,9 @@ def main():
     flash_parser.add_argument("-p", "--port", help="Serial port of the device (e.g., /dev/ttyUSB0, COM3).")
 
     # Upload mode
-    put_parser = subparsers.add_parser("put", help="Upload scripts to the device.")
-    put_parser.add_argument("path", help="Path to the script directory to upload.")
-    put_parser.add_argument("-p", "--port", help="Serial port of the device.")
+    upload_parser = subparsers.add_parser("upload", help="Upload scripts to the device.")
+    upload_parser.add_argument("path", help="Path to the script directory to upload.")
+    upload_parser.add_argument("-p", "--port", help="Serial port of the device.")
 
     # Format mode
     format_parser = subparsers.add_parser("format", help="Format the device's filesystem.")
@@ -287,7 +289,7 @@ def main():
         setup_environment()
     elif args.mode == "flash":
         flash_firmware(args.port)
-    elif args.mode == "put":
+    elif args.mode == "upload":
         upload_scripts(args.path, args.port)
     elif args.mode == "format":
         format_device(args.port)
