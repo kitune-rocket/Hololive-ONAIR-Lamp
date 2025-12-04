@@ -156,12 +156,14 @@ def flash_firmware(port, baud="460800"):
     print(f"Using firmware: {firmware_path}")
 
     print("Erasing flash...")
+    input('Make sure the target board is in bootloader mode, and press enter...')
     # if not run_command(["esptool.py", "--port", port, "erase_flash"]):
     if not run_command(["esptool.py", "erase_flash"]):
         print("Error erasing flash. Please check the connection and try again.", file=sys.stderr)
         sys.exit(1)
 
     print("Writing firmware...")
+    input('Make sure the target board is in bootloader mode, and press enter...')
     # write_command = [
     #     "esptool.py", "--port", port, "--baud", baud,
     #     "write_flash", "0x1000", firmware_path
