@@ -210,3 +210,6 @@ __marimo__/
 .vscode
 config.json
 GEMINI.md
+tool/*.md
+*.bin
+*.mid
