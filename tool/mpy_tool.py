@@ -192,7 +192,7 @@ def upload_scripts(path, port):
         print(f"Error: Path '{path}' is not a valid directory.", file=sys.stderr)
         sys.exit(1)
 
-    whitelist = ['.py', '.pyc', '.pyo', '.json', '.txt']
+    whitelist = ['.py', '.pyc', '.pyo', '.json', '.txt', '.bin']
     
     for root, _, files in os.walk(path):
         for filename in files:
