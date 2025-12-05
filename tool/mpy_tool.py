@@ -136,15 +136,15 @@ def flash_firmware(port, baud="460800"):
         print("Error: Serial port must be provided via argument or SERIAL_PORT variable.", file=sys.stderr)
         sys.exit(1)
 
+    firmware_filename = FIRMWARE_RELEASE.split('/')[-1]
     bin_files = [f for f in os.listdir('.') if f.endswith('.bin')]
-    if not bin_files:
+    if firmware_filename not in bin_files:
         if DEBUG:
             print("[DRY RUN] Would download firmware.")
             bin_files.append("firmware.bin") # mock file
         else:
             print(f"No .bin file found. Downloading from {FIRMWARE_RELEASE}...")
             try:
-                firmware_filename = FIRMWARE_RELEASE.split('/')[-1]
                 request.urlretrieve(FIRMWARE_RELEASE, firmware_filename)
                 bin_files.append(firmware_filename)
                 print(f"Downloaded '{firmware_filename}'")
@@ -152,7 +152,7 @@ def flash_firmware(port, baud="460800"):
                 print(f"Error downloading firmware: {e}", file=sys.stderr)
                 sys.exit(1)
     
-    firmware_path = bin_files[0]
+    firmware_path = firmware_filename
     print(f"Using firmware: {firmware_path}")
 
     print("Erasing flash...")
