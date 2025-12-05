@@ -203,7 +203,12 @@ class OnAir(State):
 
 def init():
     freq(240_000_000) # Highst frequency of ESP32-S2
-    ntptime.settime()
+    for _ in range(10):
+        try:
+            ntptime.settime()
+        except:
+            continue
+        break
 
 def main():
     init()
