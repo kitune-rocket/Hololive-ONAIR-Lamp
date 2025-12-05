@@ -179,8 +179,9 @@ class Waiting(State):
 
 class OnAir(State):
     def on_enter(self, ctx):
-        ctx.desklight.light_on()
+        boot.DisableWifi()
         ctx.desklight.play()
+        boot.EnableWifi()
 
     def on_exit(self, ctx):
         ctx.desklight.light_off()

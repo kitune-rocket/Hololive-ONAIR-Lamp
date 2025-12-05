@@ -8,12 +8,21 @@ with open('./config.json') as f :
     config = json.loads(s)
 
 wlan = network.WLAN()
-wlan.active(True)
-wlan.connect(config['ssid'], config['password'])
-for _ in range(10) :
-    if wlan.isconnected() :
-        break
+def EnableWifi() :
+    global wlan
+    wlan.active(True)
+    wlan.connect(config['ssid'], config['password'])
+    for _ in range(10) :
+        if wlan.isconnected() :
+            break
+        sleep(1)
+
+def DisableWifi() :
+    global wlan
+    wlan.active(False)
     sleep(1)
+
+EnableWifi()
 
 if wlan.isconnected() == False :
     soft_reset()
