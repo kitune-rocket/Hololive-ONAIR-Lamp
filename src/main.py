@@ -49,7 +49,7 @@ class Datetime:
 class Desklight:
     def __init__(self, light_pin:int, spwm_pin:int, trigger_pin:int, amp_pin:int):
         self._light = Pin(light_pin, Pin.OUT)
-        self._light.off()
+        self._light.on()
         self._spwm = SPWM(spwm_pin)
         self._trg = Pin(trigger_pin, Pin.OUT)
         self._trg.off()
@@ -180,11 +180,12 @@ class Waiting(State):
 class OnAir(State):
     def on_enter(self, ctx):
         boot.DisableWifi()
+        ctx.desklight.light_off()
         ctx.desklight.play()
         boot.EnableWifi()
 
     def on_exit(self, ctx):
-        ctx.desklight.light_off()
+        ctx.desklight.light_on()
 
     def update(self, ctx):
         if ctx.get_timer() < const(5 * 60 * 1000):
