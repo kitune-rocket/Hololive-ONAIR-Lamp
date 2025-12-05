@@ -1,6 +1,6 @@
 from machine import freq, Pin
 from micropython import const
-import time, ntptime
+import time, ntptime, struct
 import requests
 import boot
 from fsm import *
@@ -55,19 +55,23 @@ class Desklight:
         self._trg.off()
         self._amp = Pin(amp_pin, Pin.OUT)
         self._amp.off()
-        self._audio_data = boot.config['audio_data']
 
     def play(self):
         self._amp.on()
-        for d in self._audio_data :
-            if d[1] == 0 :
-                self._spwm.stop()
-            else :
-                self._spwm.start(d[1])
-            self._trg.on()
-            time.sleep_us(1000)
-            self._trg.off()
-            time.sleep_us(d[0]-1000)
+        with open('./audio.bin', 'rb') as f:
+            while True:
+                data = f.read(4)
+                if not data: #EOF
+                    break
+                freq, duration = struct.unpack('<HH', data)
+                if freq == 0:
+                    self._spwm.stop()
+                else:
+                    self._spwm.start(freq)
+                self._trg.on()
+                time.sleep_us(1000)
+                self._trg.off()
+                time.sleep_us((duration-1)*1000)
         self._amp.off()
         self._spwm.stop()
     
@@ -200,21 +204,18 @@ def init():
     ntptime.settime()
 
 def main():
-    context = Context()
-    spwm = SPWM(44)
-
     init()
+    context = Context()
 
     fsm = StateMachine(context)
     fsm.add_state(IdleState())
     fsm.add_state(Waiting())
     fsm.add_state(OnAir())
 
-    fsm.start(OnAir) #fsm.start(IdleState)
+    fsm.start(IdleState)
     while True :
         fsm.run_cycle()
         time.sleep(1)
 
 if __name__ == '__main__' :
     main()
-    pass
