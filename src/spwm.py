@@ -201,13 +201,17 @@ class SPWM:
         self._timer_id = self._allocate_id()
         self._timer = Timer(self._timer_id)
         # LEDC_CLK=80MHz, Divider=1, Duty resolution=7bit
-        self._pwm = PWM(self._pin, freq=80_000_000//(1*128), duty=0)
+        self._pwm = PWM(self._pin, freq=80_000_000//(1*128), duty=512)
         _ch_num = self._get_ledc_ch_number(pin_num)
         self._isr = self._allocate_isr(_ch_num)
+        global SINE_INDEX
+        self._sine_index = SINE_INDEX
 
     def start(self, freq):
-        self.stop()
+        self._sine_index[0] = 0
         self._timer.init(freq=int(freq*self._SPWM_MULTIPLE), mode=Timer.PERIODIC, callback=self._isr)
 
     def stop(self):
         self._timer.deinit()
+        self._sine_index[0] = 0
+        self._pwm.duty(512)

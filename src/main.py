@@ -66,8 +66,9 @@ class Desklight:
                 freq, duration = struct.unpack('<HH', data)
                 if freq == 0:
                     self._spwm.stop()
-                else:
-                    self._spwm.start(freq)
+                    time.sleep_us(duration*1000)
+                    continue
+                self._spwm.start(freq)
                 self._trg.on()
                 time.sleep_us(1000)
                 self._trg.off()
