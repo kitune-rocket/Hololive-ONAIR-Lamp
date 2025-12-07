@@ -16,7 +16,6 @@ import sys
 import subprocess
 import argparse
 import shutil
-from urllib import request
 
 # ==============================================================================
 # Global Configuration
@@ -144,14 +143,12 @@ def flash_firmware(port, baud="460800"):
             bin_files.append("firmware.bin") # mock file
         else:
             print(f"No .bin file found. Downloading from {FIRMWARE_RELEASE}...")
-            try:
-                request.urlretrieve(FIRMWARE_RELEASE, firmware_filename)
-                bin_files.append(firmware_filename)
-                print(f"Downloaded '{firmware_filename}'")
-            except Exception as e:
-                print(f"Error downloading firmware: {e}", file=sys.stderr)
+            curl_command = ["curl", "-L", "-o", firmware_filename, FIRMWARE_RELEASE]
+            if not run_command(curl_command):
+                print(f"Error downloading firmware.", file=sys.stderr)
                 sys.exit(1)
-    
+            bin_files.append(firmware_filename)
+            print(f"Downloaded '{firmware_filename}'")
     firmware_path = firmware_filename
     print(f"Using firmware: {firmware_path}")
 
