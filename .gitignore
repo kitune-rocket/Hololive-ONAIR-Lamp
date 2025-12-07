@@ -211,5 +211,6 @@ __marimo__/
 config.json
 GEMINI.md
 tool/*.md
+!tool/README.md
 *.bin
 *.mid
