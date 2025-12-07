@@ -111,10 +111,10 @@ class Context:
         self.token = boot.config['token']
         self.channelId = boot.config['channelId']
         self.api = Holodex(boot.config['token'], boot.config['channelId'])
-        self.desklight = Desklight(11, 34, 33, 12) #self.desklight = Desklight(11, 34, 33, 35)
+        self.desklight = Desklight(11, 34, 33, 35)
     
     def log(self, msg):
-        print(f'{msg}')
+        # print(f'{msg}') # for debugging
         pass
     
     def set_timer(self):
@@ -146,6 +146,7 @@ def GetUpcomming(ctx):
 
 class IdleState(State):
     def update(self, ctx):
+        # Every 5 minutes. Reducing API call count.
         if ctx.get_timer() < const(5 * 60 * 1000):
             return None
         ctx.set_timer()
@@ -163,6 +164,7 @@ class IdleState(State):
 
 class Waiting(State):
     def update(self, ctx):
+        # Every 10 seconds.
         if ctx.get_timer() < const(10 * 1000):
             return None
         ctx.set_timer()
@@ -189,6 +191,7 @@ class OnAir(State):
         ctx.desklight.light_on()
 
     def update(self, ctx):
+        # Every 5 minutes. Reducing API call count.
         if ctx.get_timer() < const(5 * 60 * 1000):
             return None
         ctx.set_timer()
@@ -203,7 +206,7 @@ class OnAir(State):
 ####
 
 def init():
-    freq(240_000_000) # Highst frequency of ESP32-S2
+    freq(240_000_000) # Highst clock of ESP32-S2
     for _ in range(10):
         try:
             ntptime.settime()
@@ -214,15 +217,18 @@ def init():
 def main():
     init()
     context = Context()
+    led = Pin(11, Pin.OUT)
+    led.off()
 
     fsm = StateMachine(context)
     fsm.add_state(IdleState())
     fsm.add_state(Waiting())
     fsm.add_state(OnAir())
 
-    fsm.start(IdleState)
+    fsm.start(OnAir) # For audio test run at power up. After audio playing, states fallbacks to IdleState.
     while True :
         fsm.run_cycle()
+        led.value(not led.value())
         time.sleep(1)
 
 if __name__ == '__main__' :
