@@ -1,6 +1,7 @@
 {
     "ssid": "",
     "password": "",
-    "token": "",
+    "key_holodex": "",
+    "key_youtube": "",
     "channelId": ""
 }

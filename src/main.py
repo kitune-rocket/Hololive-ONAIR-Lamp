@@ -108,10 +108,10 @@ class Context:
     def __init__(self):
         self.upcomming: dict = None # Holodex api response
         self.__timer = time.ticks_ms()
-        self.token = boot.config['token']
-        self.channelId = boot.config['channelId']
-        self.api = Holodex(boot.config['token'], boot.config['channelId'])
-        self.desklight = Desklight(11, 34, 33, 35)
+        self.api = Holodex(boot.config['key_holodex'], boot.config['channelId'])
+
+        self.desklight = Desklight(35, 34, 33, 12) # original
+        # self.desklight = Desklight(11, 34, 33, 12) # test board
     
     def log(self, msg):
         # print(f'{msg}') # for debugging

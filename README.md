@@ -33,7 +33,8 @@ Create a `config.json` file inside the `src` directory with the following conten
 {
     "ssid": "YOUR_WIFI_SSID",
     "password": "YOUR_WIFI_PASSWORD",
-    "token": "YOUR_HOLODEX_API_KEY",
+    "key_holodex": "YOUR_HOLODEX_API_KEY",
+    "key_youtube": "YOUR_YOUTUBE_DATA_API_KEY",
     "channelId": "YOUTUBE_CHANNEL_ID_TO_MONITOR"
 }
 ```
