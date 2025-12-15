@@ -66,3 +66,4 @@ The [`tool/`](./tool/) directory contains helpful scripts for development:
 ## Future Improvements
 
 - Reducing **tick** sounds at start of all notes.
+- Increase API response with additional Google Youtube Data API
