@@ -101,6 +101,8 @@ class Holodex:
     # Blokcing api call
     def get_live(self):
         response = requests.get(self._get_live_url(), headers={'X-APIKEY': self._token})
+        if response.status_code != 200:
+            return None, response.status_code
         return response.json(), response.status_code
 
 # Global status / data class
@@ -129,9 +131,14 @@ class Context:
 
 #### Main FSM
 
-def GetUpcomming(ctx):
-    resp, code = ctx.api.get_live()
-    if code != 200:
+def get_upcomming(ctx):
+    try :
+        resp, code = ctx.api.get_live()
+    except :
+        ctx.log(f'[Error] API call failed with exception (network related)')
+        return ctx.upcomming
+    
+    if resp is None:
         ctx.log(f'[Error] API call failed with code {code}')
         return ctx.upcomming
     
@@ -151,7 +158,7 @@ class IdleState(State):
             return None
         ctx.set_timer()
 
-        GetUpcomming(ctx)
+        get_upcomming(ctx)
         if ctx.upcomming is None:
             return None
 
@@ -169,7 +176,7 @@ class Waiting(State):
             return None
         ctx.set_timer()
         
-        GetUpcomming(ctx)
+        get_upcomming(ctx)
         if ctx.upcomming is None:
             return IdleState
 
@@ -196,7 +203,7 @@ class OnAir(State):
             return None
         ctx.set_timer()
         
-        GetUpcomming(ctx)
+        get_upcomming(ctx)
         if ctx.upcomming is None:
             return IdleState
         if ctx.upcomming['status'] != 'live':
