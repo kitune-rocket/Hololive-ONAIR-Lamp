@@ -105,12 +105,45 @@ class Holodex:
             return None, response.status_code
         return response.json(), response.status_code
 
+class YoutubeData:
+    def __init__(self, token):
+        self._token = token
+        self._channel_id = ''
+        self._video_id = ''
+        self._video_etag = ''
+
+    def set_channel_id(self, channel_id):
+        self._channel_id = channel_id
+
+    def set_video_id(self, video_id):
+        self._video_id = video_id
+
+    def get_video_list(self):
+        base = 'https://www.googleapis.com/youtube/v3/videos'
+        params = []
+        params.append(f'part=liveStreamingDetails')
+        params.append(f'id={self._video_id}')
+        params.append(f'key={self._token}')
+
+        headers = {'If-None-Match': self._video_etag}
+
+        response = requests.get(base + '?' + '&'.join(params), headers=headers)
+        
+        # 304: Duplicated response(If-None-Match) >> Not updated
+        # 404: Video ID is not valid >> Upcomming live is removed
+        if response.status_code != 200:
+            return None, response.status_code
+        result = response.json()
+        self._video_etag = result['etag']
+        return result, response.status_code
+
 # Global status / data class
 class Context:
     def __init__(self):
         self.upcomming: dict = None # Holodex api response
         self.__timer = time.ticks_ms()
         self.api = Holodex(boot.config['key_holodex'], boot.config['channelId'])
+        self.youtube = YoutubeData(boot.config['key_youtube'])
 
         self.desklight = Desklight(35, 34, 33, 12) # original
         # self.desklight = Desklight(11, 34, 33, 12) # test board
