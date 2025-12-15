@@ -199,13 +199,13 @@ def get_on_air(ctx):
     # Data is no updated (Still upcommnig)
     # Using cached response. 
     if code == 304 :
-        # ctx.log(f'[API] Data is not updated') #
+        ctx.log(f'[API] Data is not updated')
         return None
 
     # Upcomming live is removed
     # Remove cached response.
     if code == 404 :
-        ctx.youtube = None
+        ctx.on_air = None
         ctx.upcomming = None
         ctx.log(f'[API] Upcomming live is removed')
         return None
@@ -246,20 +246,24 @@ class IdleState(State):
         return None
 
 class Waiting(State):
+    def on_enter(self, ctx):
+        ctx.youtube.set_video_id(ctx.upcomming['id'])
+        ctx.on_air = {'status': 'upcoming', 'scheduledStartTime': ctx.upcomming['start_scheduled']}
+
     def update(self, ctx):
         # Every 10 seconds.
         if ctx.get_timer() < const(10 * 1000):
             return None
         ctx.set_timer()
         
-        get_upcomming(ctx)
-        if ctx.upcomming is None:
+        get_on_air(ctx)
+        if ctx.on_air is None:
             return IdleState
 
-        if ctx.upcomming['status'] == 'live':
+        if ctx.on_air['status'] == 'live':
             return OnAir
 
-        if Datetime.diff_minute(ctx.upcomming['start_scheduled']) > 10:
+        if Datetime.diff_minute(ctx.on_air['scheduledStartTime']) > 10:
             return IdleState
         return None
 
