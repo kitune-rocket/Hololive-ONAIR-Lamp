@@ -2,6 +2,7 @@
     "ssid": "",
     "password": "",
     "key_holodex": "",
+    "enable_youtube_api": true,
     "key_youtube": "",
     "channelId": ""
 }

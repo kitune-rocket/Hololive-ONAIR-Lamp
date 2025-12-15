@@ -144,7 +144,11 @@ class Context:
         self.on_air: dict = None # Youtube api response
         self.__timer = time.ticks_ms()
         self.api = Holodex(boot.config['key_holodex'], boot.config['channelId'])
-        self.youtube = YoutubeData(boot.config['key_youtube'])
+        if boot.config['enable_youtube_api']:
+            self.youtube = YoutubeData(boot.config['key_youtube'])
+            self.youtube.set_channel_id(boot.config['channelId'])
+        else:
+            self.youtube = None
 
         self.desklight = Desklight(35, 34, 33, 12) # original
         # self.desklight = Desklight(11, 34, 33, 12) # test board
@@ -222,9 +226,11 @@ def get_on_air(ctx):
     #   by existence of liveStreamingDetails.actualStartTime
     # Workaround due to large size response of snippet
     if 'actualStartTime' in ctx.on_air['liveStreamingDetails']:
-        ctx.onair['status'] = 'live'
+        ctx.on_air['status'] = 'live'
     else:
         ctx.on_air['status'] = 'upcoming'
+    ctx.on_air['start_scheduled'] = ctx.on_air['liveStreamingDetails']['scheduledStartTime']
+    ctx.log(f'[API] Data updated: {ctx.on_air['status']}, {ctx.on_air['start_scheduled']}')
     return ctx.on_air
 
 class IdleState(State):
@@ -246,9 +252,11 @@ class IdleState(State):
         return None
 
 class Waiting(State):
+    # Waiting state must be after IdleState
     def on_enter(self, ctx):
-        ctx.youtube.set_video_id(ctx.upcomming['id'])
-        ctx.on_air = {'status': 'upcoming', 'scheduledStartTime': ctx.upcomming['start_scheduled']}
+        if ctx.youtube is not None:
+            ctx.youtube.set_video_id(ctx.upcomming['id'])
+            ctx.on_air = {'status': 'upcoming', 'start_scheduled': ctx.upcomming['start_scheduled']}
 
     def update(self, ctx):
         # Every 10 seconds.
@@ -256,14 +264,17 @@ class Waiting(State):
             return None
         ctx.set_timer()
         
-        get_on_air(ctx)
-        if ctx.on_air is None:
+        api_call = get_upcomming if ctx.youtube is None else get_on_air
+        result = ctx.upcomming if ctx.youtube is None else ctx.on_air
+
+        api_call(ctx)
+        if result is None:
             return IdleState
 
-        if ctx.on_air['status'] == 'live':
+        if result['status'] == 'live':
             return OnAir
 
-        if Datetime.diff_minute(ctx.on_air['scheduledStartTime']) > 10:
+        if Datetime.diff_minute(result['start_scheduled']) > 10:
             return IdleState
         return None
 
