@@ -83,24 +83,24 @@ class Desklight:
         self._light.off()
 
 class Holodex:
-    def __init__(self, token, channelId):
-        self.token = token
-        self.channelId = channelId
+    def __init__(self, token, channel_id):
+        self._token = token
+        self._channel_id = channel_id
 
-    def __get_live_url(self):
-        base_url = 'https://holodex.net/api/v2/live'
-        query_params = []
-        query_params.append(f'channel_id={self.channelId}')
-        query_params.append(f'status=live,upcoming')
-        query_params.append(f'limit=5')
-        query_params.append(f'order=asc')
-        query_params.append(f'sort=start_scheduled')
-        query_params.append(f'include=live_info')
-        return base_url + '?' + '&'.join(query_params)
+    def _get_live_url(self):
+        base = 'https://holodex.net/api/v2/live'
+        params = []
+        params.append(f'channel_id={self._channel_id}')
+        params.append(f'status=live,upcoming')
+        params.append(f'limit=5')
+        params.append(f'order=asc')
+        params.append(f'sort=start_scheduled')
+        params.append(f'include=live_info')
+        return base + '?' + '&'.join(params)
 
     # Blokcing api call
     def get_live(self):
-        response = requests.get(self.__get_live_url(), headers={'X-APIKEY': self.token})
+        response = requests.get(self._get_live_url(), headers={'X-APIKEY': self._token})
         return response.json(), response.status_code
 
 # Global status / data class
