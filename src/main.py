@@ -141,6 +141,7 @@ class YoutubeData:
 class Context:
     def __init__(self):
         self.upcomming: dict = None # Holodex api response
+        self.on_air: dict = None # Youtube api response
         self.__timer = time.ticks_ms()
         self.api = Holodex(boot.config['key_holodex'], boot.config['channelId'])
         self.youtube = YoutubeData(boot.config['key_youtube'])
@@ -169,20 +170,62 @@ def get_upcomming(ctx):
         resp, code = ctx.api.get_live()
     except :
         ctx.log(f'[Error] API call failed with exception (network related)')
-        return ctx.upcomming
+        return None # Using cached response.
     
+    # Using cached response.
     if resp is None:
         ctx.log(f'[Error] API call failed with code {code}')
-        return ctx.upcomming
+        return None
     
+    # Upcomming live is removed
+    # Remove cached response.
     if len(resp) == 0:
         ctx.log(f'[API] Upcomming is empty')
         ctx.upcomming = None
         return None
     
+    # Update cached response
     ctx.log(f'[API] Upcomming found: {resp[0]["title"]}, {resp[0]["start_scheduled"]}')
     ctx.upcomming = resp[0]
     return ctx.upcomming
+
+def get_on_air(ctx):
+    try :
+        resp, code = ctx.youtube.get_video_list()
+    except :
+        ctx.log(f'[Error] API call failed with exception (network related)')
+        return None # Using cached response.
+    
+    # Data is no updated (Still upcommnig)
+    # Using cached response. 
+    if code == 304 :
+        # ctx.log(f'[API] Data is not updated') #
+        return None
+
+    # Upcomming live is removed
+    # Remove cached response.
+    if code == 404 :
+        ctx.youtube = None
+        ctx.upcomming = None
+        ctx.log(f'[API] Upcomming live is removed')
+        return None
+
+    # Using cached response.
+    if code != 200 :
+        ctx.log(f'[Error] API call failed with code {code}')
+        return None
+
+    # Update cached response.
+    ctx.on_air = resp['items'][0]
+    
+    # Assume snippet.liveBroadcastContent 
+    #   by existence of liveStreamingDetails.actualStartTime
+    # Workaround due to large size response of snippet
+    if 'actualStartTime' in ctx.on_air['liveStreamingDetails']:
+        ctx.onair['status'] = 'live'
+    else:
+        ctx.on_air['status'] = 'upcoming'
+    return ctx.on_air
 
 class IdleState(State):
     def update(self, ctx):
