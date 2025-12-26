@@ -1,3 +1,5 @@
+<img src='./resource/DSCF0561_hires.jpeg' alt='Hololive-ONAIR-Lamp' width='600'/>
+
 # Hololive-ONAIR-Lamp
 
 This project transforms the official Hololive desk light into a real-time "ON AIR" notification lamp. It automatically plays a startup tune and lights up when your favorite Hololive member begins a YouTube stream.
