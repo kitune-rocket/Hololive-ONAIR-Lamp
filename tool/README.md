@@ -169,6 +169,8 @@ python midi_converter.py [midi_file_path] [options]
 | :--- | :--- | :--- |
 | `midi_file_path` | **Required** | The path to the input `.mid` file. |
 | `-k` / `--key` | Optional | Transpose the key by $N$ semitones.<br>• **Positive int**: Pitch up<br>• **Negative int**: Pitch down<br>• **Default**: `0` |
+| `-b` / `--bpm` | Optional | Manually set the BPM (overrides MIDI file tempo).<br>• **Float**: Target BPM (e.g., `140`, `128.5`) |
+| `-l` / `--length` | Optional | Limit the conversion to a specific number of beats.<br>• **Float**: Max beats (e.g., `64`, `100.25`) |
 
 -----
 

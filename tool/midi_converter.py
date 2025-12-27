@@ -12,7 +12,7 @@ def midi_to_hz(note, transpose=0):
     note += transpose
     return 440 * 2**((note - 69) / 12)
 
-def analyze_and_process_midi(midi_path, transpose):
+def analyze_and_process_midi(midi_path, transpose, target_bpm=None, max_beats=None):
     """
     Analyzes a MIDI file, prompts the user to select a track,
     and processes it into a list of (frequency, duration) tuples.
@@ -79,19 +79,33 @@ def analyze_and_process_midi(midi_path, transpose):
     # --- Note Processing ---
     selected_track = mid.tracks[selected_track_num]
     ticks_per_beat = mid.ticks_per_beat
-    tempo = 500000  # Default MIDI tempo (120 BPM)
+    
+    if target_bpm:
+        tempo = mido.bpm2tempo(target_bpm)
+        print(f"Using manual BPM: {target_bpm} (Tempo: {tempo})")
+    else:
+        tempo = 500000  # Default MIDI tempo (120 BPM)
+        # Only detect tempo if not manually specified
+        for msg in mido.merge_tracks(mid.tracks): # Merge tracks to get global tempo changes
+            if msg.is_meta and msg.type == 'set_tempo':
+                tempo = msg.tempo
+        print(f"Detected Tempo: {tempo} (BPM: {mido.tempo2bpm(tempo):.2f})")
+
+    limit_ticks = None
+    if max_beats is not None:
+        limit_ticks = int(max_beats * ticks_per_beat)
+        print(f"Limit set to {max_beats} beats ({limit_ticks} ticks)")
 
     note_events = []
     current_time_ticks = 0
     open_notes = {} # {note: start_tick}
 
-    for msg in mido.merge_tracks(mid.tracks): # Merge tracks to get global tempo changes
-        if msg.is_meta and msg.type == 'set_tempo':
-            tempo = msg.tempo
-
     for msg in selected_track:
         current_time_ticks += msg.time
         
+        if limit_ticks is not None and current_time_ticks > limit_ticks:
+            break
+
         is_note_on = msg.type == 'note_on' and msg.velocity > 0
         is_note_off = msg.type == 'note_off' or (msg.type == 'note_on' and msg.velocity == 0)
 
@@ -189,9 +203,21 @@ def main():
         default=0,
         help="Transpose the key by a number of semitones (e.g., -1 to lower, 1 to raise)."
     )
+    parser.add_argument(
+        "-b", "--bpm",
+        type=float,
+        default=None,
+        help="Manually set the BPM (overrides MIDI file tempo)."
+    )
+    parser.add_argument(
+        "-l", "--length",
+        type=float,
+        default=None,
+        help="Limit the conversion to a specific number of beats (e.g., 120 or 100.25)."
+    )
     args = parser.parse_args()
 
-    processed_notes, original_filename = analyze_and_process_midi(args.midi_file, args.key)
+    processed_notes, original_filename = analyze_and_process_midi(args.midi_file, args.key, args.bpm, args.length)
 
     if processed_notes:
         script_dir = os.path.dirname(os.path.realpath(__file__))
