@@ -219,3 +219,9 @@ class SPWM:
         self._timer.deinit()
         self._sine_index[0] = 0
         self._pwm.duty(512)
+
+    def deinit(self):
+        self.stop()
+        self._pwm.deinit()
+        self._used_ids.remove(self._timer_id)
+        self._pin.release()
