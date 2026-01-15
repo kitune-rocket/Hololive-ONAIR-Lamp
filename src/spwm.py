@@ -48,14 +48,22 @@ GPIO_MATRIX_BASE = const(0x6000_4000)
 GPIO_FUNC0_OUT_SEL_CFG_REG = const(GPIO_MATRIX_BASE + 0x0554)
 
 # SPWM look up table
-SINE_INDEX = array.array('i', [0])
+SINE_INDEX0 = array.array('i', [0])
+SINE_INDEX1 = array.array('i', [0])
+SINE_INDEX2 = array.array('i', [0])
+SINE_INDEX3 = array.array('i', [0])
+SINE_INDEX4 = array.array('i', [0])
+SINE_INDEX5 = array.array('i', [0])
+SINE_INDEX6 = array.array('i', [0])
+SINE_INDEX7 = array.array('i', [0])
+SINE_INDEX = [SINE_INDEX0, SINE_INDEX1, SINE_INDEX2, SINE_INDEX3, SINE_INDEX4, SINE_INDEX5, SINE_INDEX6, SINE_INDEX7]
 SINE_TABLE = array.array('i', [64, 76, 88, 99, 108, 116, 122, 126, 127, 126, 122, 116, 108, 99, 88, 76, 
                                         64, 51, 39, 28, 19, 11, 5, 1, 0, 1, 5, 11, 19, 28, 39, 51,])
 
 @micropython.viper
 def ledc_ch0_isr(htim) :
-    global SINE_INDEX, SINE_TABLE
-    index = ptr32(SINE_INDEX)
+    global SINE_INDEX0, SINE_TABLE
+    index = ptr32(SINE_INDEX0)
     table = ptr32(SINE_TABLE)
 
     duty_val = table[index[0]]
@@ -67,8 +75,8 @@ def ledc_ch0_isr(htim) :
 
 @micropython.viper
 def ledc_ch1_isr(htim) :
-    global SINE_INDEX, SINE_TABLE
-    index = ptr32(SINE_INDEX)
+    global SINE_INDEX1, SINE_TABLE
+    index = ptr32(SINE_INDEX1)
     table = ptr32(SINE_TABLE)
 
     duty_val = table[index[0]]
@@ -80,8 +88,8 @@ def ledc_ch1_isr(htim) :
 
 @micropython.viper
 def ledc_ch2_isr(htim) :
-    global SINE_INDEX, SINE_TABLE
-    index = ptr32(SINE_INDEX)
+    global SINE_INDEX2, SINE_TABLE
+    index = ptr32(SINE_INDEX2)
     table = ptr32(SINE_TABLE)
 
     duty_val = table[index[0]]
@@ -93,8 +101,8 @@ def ledc_ch2_isr(htim) :
 
 @micropython.viper
 def ledc_ch3_isr(htim) :
-    global SINE_INDEX, SINE_TABLE
-    index = ptr32(SINE_INDEX)
+    global SINE_INDEX3, SINE_TABLE
+    index = ptr32(SINE_INDEX3)
     table = ptr32(SINE_TABLE)
 
     duty_val = table[index[0]]
@@ -106,8 +114,8 @@ def ledc_ch3_isr(htim) :
 
 @micropython.viper
 def ledc_ch4_isr(htim) :
-    global SINE_INDEX, SINE_TABLE
-    index = ptr32(SINE_INDEX)
+    global SINE_INDEX4, SINE_TABLE
+    index = ptr32(SINE_INDEX4)
     table = ptr32(SINE_TABLE)
 
     duty_val = table[index[0]]
@@ -119,8 +127,8 @@ def ledc_ch4_isr(htim) :
 
 @micropython.viper
 def ledc_ch5_isr(htim) :
-    global SINE_INDEX, SINE_TABLE
-    index = ptr32(SINE_INDEX)
+    global SINE_INDEX5, SINE_TABLE
+    index = ptr32(SINE_INDEX5)
     table = ptr32(SINE_TABLE)
 
     duty_val = table[index[0]]
@@ -132,8 +140,8 @@ def ledc_ch5_isr(htim) :
 
 @micropython.viper
 def ledc_ch6_isr(htim) :
-    global SINE_INDEX, SINE_TABLE
-    index = ptr32(SINE_INDEX)
+    global SINE_INDEX6, SINE_TABLE
+    index = ptr32(SINE_INDEX6)
     table = ptr32(SINE_TABLE)
 
     duty_val = table[index[0]]
@@ -145,8 +153,8 @@ def ledc_ch6_isr(htim) :
 
 @micropython.viper
 def ledc_ch7_isr(htim) :
-    global SINE_INDEX, SINE_TABLE
-    index = ptr32(SINE_INDEX)
+    global SINE_INDEX7, SINE_TABLE
+    index = ptr32(SINE_INDEX7)
     table = ptr32(SINE_TABLE)
 
     duty_val = table[index[0]]
@@ -155,6 +163,9 @@ def ledc_ch7_isr(htim) :
     ptr32(LEDC_CH7_DUTY_REG)[0] = (duty_val << 4)
     ptr32(LEDC_CH7_CONF1_REG)[0] |= uint(LEDC_DUTY_CHG_START_MASK) 
     ptr32(LEDC_CH7_CONF0_REG)[0] |= uint(LEDC_PARAM_UPDATE_MASK)
+
+LEDC_ISR = [ledc_ch0_isr, ledc_ch1_isr, ledc_ch2_isr, ledc_ch3_isr,
+            ledc_ch4_isr, ledc_ch5_isr, ledc_ch6_isr, ledc_ch7_isr]
 
 # SPWM generation class in audio frequency range
 class SPWM:
@@ -178,22 +189,9 @@ class SPWM:
         return (sig_out & 0xFF) - LEDC_LS_SIG_OUT0
 
     def _allocate_isr(self, ch_num: int):
-        if ch_num == 0:
-            return ledc_ch0_isr
-        elif ch_num == 1:
-            return ledc_ch1_isr
-        elif ch_num == 2:
-            return ledc_ch2_isr
-        elif ch_num == 3:
-            return ledc_ch3_isr
-        elif ch_num == 4:
-            return ledc_ch4_isr
-        elif ch_num == 5:
-            return ledc_ch5_isr
-        elif ch_num == 6:
-            return ledc_ch6_isr
-        elif ch_num == 7:
-            return ledc_ch7_isr
+        global LEDC_ISR
+        if ch_num < 8:
+            return LEDC_ISR[ch_num]
         else:
             raise RuntimeError(f'Invalid channel number: {ch_num}')
 
@@ -209,7 +207,7 @@ class SPWM:
         _ch_num = self._get_ledc_ch_number(self._pin.id())
         self._isr = self._allocate_isr(_ch_num)
         global SINE_INDEX
-        self._sine_index = SINE_INDEX
+        self._sine_index = SINE_INDEX[_ch_num]
 
     def start(self, freq):
         self._sine_index[0] = 0
