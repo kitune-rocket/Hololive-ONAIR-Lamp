@@ -76,6 +76,11 @@ class SafePin:
         if self._core.owner_key is not None and self._core.owner_key != self._my_key:
             raise PermissionError(f"Pin {self._core.id} write access denied. Owned by {self._core.owner_key}")
 
+    def unwrap(self):
+        """Return the underlying machine.Pin object."""
+        self._check_permission()
+        return self._core.pin
+
     # Wrapping machine.Pin interface (read allowed, write restricted)
     
     def value(self, *args):
