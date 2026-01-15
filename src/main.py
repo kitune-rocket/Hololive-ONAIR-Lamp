@@ -4,7 +4,8 @@ import time, ntptime, struct
 import requests
 import boot
 from fsm import *
-from spwm import *
+from safe_pin import SafePin
+from sound import NotiSound
 
 class Datetime:
     @staticmethod
@@ -47,40 +48,32 @@ class Datetime:
         return int(Datetime.diff(datetime_str) / 3600)
 
 class Desklight:
-    def __init__(self, light_pin:int, spwm_pin:int, trigger_pin:int, amp_pin:int):
-        self._light = Pin(light_pin, Pin.OUT)
-        self._light.on()
-        self._spwm = SPWM(spwm_pin)
-        self._trg = Pin(trigger_pin, Pin.OUT)
-        self._trg.off()
-        self._amp = Pin(amp_pin, Pin.OUT)
+    def __init__(self, light_pin:int, trigger_pin:int, amp_pin:int, spwm_pins:list[int]):
+        self._light = SafePin(light_pin, owner_key='desklight')
+        self._light.acquire()
+        self._light.init(Pin.OUT)
+        self.light_off()
+
+        self._amp = SafePin(amp_pin, owner_key='desklight')
+        self._amp.acquire()
+        self._amp.init(Pin.OUT)
         self._amp.off()
+
+        self._trigger_pin_number = trigger_pin
+        self._spwm_pin_numbers = spwm_pins
 
     def play(self):
+        sound = NotiSound(self._spwm_pin_numbers, self._trigger_pin_number)
         self._amp.on()
-        with open('./audio.bin', 'rb') as f:
-            while True:
-                data = f.read(4)
-                if not data: #EOF
-                    break
-                freq, duration = struct.unpack('<HH', data)
-                if freq == 0:
-                    self._spwm.stop()
-                    time.sleep_us(duration*1000)
-                    continue
-                self._spwm.start(freq)
-                self._trg.on()
-                time.sleep_us(1000)
-                self._trg.off()
-                time.sleep_us((duration-1)*1000)
+        sound.play('./audio.bin')
         self._amp.off()
-        self._spwm.stop()
-    
+        sound.deinit()
+
     def light_on(self):
-        self._light.on()
+        self._light.off()
 
     def light_off(self):
-        self._light.off()
+        self._light.on()
 
 class Holodex:
     def __init__(self, token, channel_id):
@@ -150,8 +143,8 @@ class Context:
         else:
             self.youtube = None
 
-        self.desklight = Desklight(35, 34, 33, 12) # original
-        # self.desklight = Desklight(11, 34, 33, 12) # test board
+        self.desklight = Desklight(35, 34, 33, [12]) # original
+        # self.desklight = Desklight(11, 34, 33, [12]) # test board
     
     def log(self, msg):
         # print(f'{msg}') # for debugging
@@ -281,12 +274,12 @@ class Waiting(State):
 class OnAir(State):
     def on_enter(self, ctx):
         boot.DisableWifi()
-        ctx.desklight.light_off()
+        ctx.desklight.light_on()
         ctx.desklight.play()
         boot.EnableWifi()
 
     def on_exit(self, ctx):
-        ctx.desklight.light_on()
+        ctx.desklight.light_off()
 
     def update(self, ctx):
         # Every 5 minutes. Reducing API call count.
