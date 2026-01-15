@@ -7,18 +7,17 @@ class _PinCore:
     """
     _instances = {}
 
-    def __new__(cls, id, *args, **kwargs):
+    def __new__(cls, id):
         if id not in cls._instances:
             cls._instances[id] = super().__new__(cls)
             cls._instances[id]._initialized = False
         return cls._instances[id]
 
-    def __init__(self, id, *args, **kwargs):
+    def __init__(self, id):
         # Initialize only once for the singleton 
         if not self._initialized:
             self.id = id
-            # Contruct the actual machine.Pin object with additional args
-            self.pin = Pin(id, *args, **kwargs)
+            self.pin = Pin(id)
             self.owner_key = None # Current owner key for mutex (None if free)
             self._initialized = True
     
@@ -33,14 +32,14 @@ class SafePin:
     - Manages write permissions via owner_key.
     """
     
-    def __init__(self, id, owner_key, mode=-1, pull=-1, *, value=None, drive=None, alt=None):
+    def __init__(self, id, owner_key):
         """
         :param id: GPIO pin number
         :param owner_key: Unique key to identify the current module (e.g., self, 'module_name')
         :param args, kwargs: machine.Pin initialization parameters
         """
-        self._core = _PinCore(id, mode, pull, value=value, drive=drive, alt=alt)
         self._my_key = owner_key
+        self._core = _PinCore(id)
 
     # Additional pin number return method
     def id(self):
