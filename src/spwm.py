@@ -1,6 +1,7 @@
 from machine import Pin, PWM, Timer, mem32
 from micropython import const
 import array
+from safe_pin import SafePin
 
 __all__ = ['SPWM']
 
@@ -197,12 +198,15 @@ class SPWM:
             raise RuntimeError(f'Invalid channel number: {ch_num}')
 
     def __init__(self, pin_num: int):
-        self._pin = Pin(pin_num, Pin.OUT)
+        self._pin = SafePin(pin_num, owner_key='spwm')
+        self._pin.acquire()
+        self._pin.init(Pin.OUT)
+
         self._timer_id = self._allocate_id()
         self._timer = Timer(self._timer_id)
         # LEDC_CLK=80MHz, Divider=1, Duty resolution=7bit
-        self._pwm = PWM(self._pin, freq=80_000_000//(1*128), duty=512)
-        _ch_num = self._get_ledc_ch_number(pin_num)
+        self._pwm = PWM(self._pin.unwrap(), freq=80_000_000//(1*128), duty=512)
+        _ch_num = self._get_ledc_ch_number(self._pin.id())
         self._isr = self._allocate_isr(_ch_num)
         global SINE_INDEX
         self._sine_index = SINE_INDEX
