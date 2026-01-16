@@ -143,8 +143,7 @@ class Context:
         else:
             self.youtube = None
 
-        self.desklight = Desklight(35, 34, 33, [12]) # original
-        # self.desklight = Desklight(11, 34, 33, [12]) # test board
+        self.desklight = Desklight(35, 33, 12, [34]) # original
     
     def log(self, msg):
         # print(f'{msg}') # for debugging
