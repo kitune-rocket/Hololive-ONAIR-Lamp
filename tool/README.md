@@ -171,6 +171,7 @@ python midi_converter.py [midi_file_path] [options]
 | `-k` / `--key` | Optional | Transpose the key by $N$ semitones.<br>• **Positive int**: Pitch up<br>• **Negative int**: Pitch down<br>• **Default**: `0` |
 | `-b` / `--bpm` | Optional | Manually set the BPM (overrides MIDI file tempo).<br>• **Float**: Target BPM (e.g., `140`, `128.5`) |
 | `-l` / `--length` | Optional | Limit the conversion to a specific number of beats.<br>• **Float**: Max beats (e.g., `64`, `100.25`) |
+| `-c` / `--channels` | Optional | Number of channels (voices) to extract.<br>• **Int**: Number of simultaneous notes.<br>• **Default**: `1` |
 
 -----
 
@@ -178,10 +179,10 @@ python midi_converter.py [midi_file_path] [options]
 
 ### 1\. Run the Command
 
-Example: Convert `song.mid` and raise the pitch by 1 octave (12 semitones).
+Example: Convert `song.mid`, raise the pitch by 1 octave, and use 3 channels.
 
 ```bash
-python midi_converter.py song.mid -k 12
+python midi_converter.py song.mid -k 12 -c 3
 ```
 
 ### 2\. Select a Track
@@ -222,10 +223,11 @@ Upon successful processing, the script generates binary files in two locations:
 The generated binary file follows this structure:
 
   * **Format:** Binary (No headers, pure data).
-  * **Data Type:** `struct.pack('<HH', frequency, duration)`
-      * **Frequency (Hz):** 16-bit Unsigned Integer (0 \~ 20,000 Hz).
+  * **Data Type:** `struct.pack('<H' + 'H' * Channels, duration, freq_0, freq_1, ...)`
       * **Duration (ms):** 16-bit Unsigned Integer (0 \~ 60,000 ms).
+      * **Frequency_N (Hz):** 16-bit Unsigned Integer (0 \~ 20,000 Hz) per channel.
   * **Logic:**
-      * **0 Hz** indicates silence (rest).
-      * Chord sections use the **highest pitch** note.
-      * Values are clamped to fit 16-bit limits.
+      * **0 Hz** indicates silence (rest) or empty channel.
+      * **Duration** comes first, followed by $N$ frequencies.
+      * If a chord has fewer notes than channels, remaining channels are filled with 0 Hz.
+      * If a chord has more notes than channels, the highest pitch notes are selected.
