@@ -22,14 +22,14 @@ def DisableWifi() :
     wlan.active(False)
     sleep(1)
 
-EnableWifi()
+# EnableWifi()
 
-if wlan.isconnected() == False :
-    soft_reset()
+# if wlan.isconnected() == False :
+#     soft_reset()
 
-try :
-    import requests
-except :
-    import mip
-    mip.install('requests')
-    soft_reset()
+# try :
+#     import requests
+# except :
+#     import mip
+#     mip.install('requests')
+#     soft_reset()
