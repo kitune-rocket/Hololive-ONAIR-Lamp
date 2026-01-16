@@ -126,7 +126,8 @@ def analyze_and_process_midi(
             # If the same note is already playing, end it first (monophonic per key).
             if msg.note in open_notes:
                 start_tick = open_notes.pop(msg.note)
-                raw_notes.append({'start_tick': start_tick, 'end_tick': current_time_ticks, 'pitch': msg.note})
+                if current_time_ticks > start_tick:
+                    raw_notes.append({'start_tick': start_tick, 'end_tick': current_time_ticks, 'pitch': msg.note})
             open_notes[msg.note] = current_time_ticks
 
         elif is_note_off:
