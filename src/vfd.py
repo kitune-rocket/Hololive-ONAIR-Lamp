@@ -1,4 +1,4 @@
-from machine import SoftSPI
+from machine import SoftSPI, Pin
 from safe_pin import SafePin
 
 # Vaccum Fluorescent Display, Futaba's 8 digit
@@ -84,6 +84,9 @@ class Vfd:
         self._cs = SafePin(CS, owner_key='vfd')
         self._rst = SafePin(RST, owner_key='vfd')
         
+        self._cs.init(Pin.OUT)
+        self._rst.init(Pin.OUT)
+
         self._cs.acquire()
         self._rst.acquire()
 
