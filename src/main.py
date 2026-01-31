@@ -316,10 +316,20 @@ def main():
     fsm.add_state(OnAir())
 
     fsm.start(OnAir) # For audio test run at power up. After audio playing, states fallbacks to IdleState.
+
+    ntp_timer = time.ticks_ms()
+
     while True :
         fsm.run_cycle()
         led.value(not led.value())
         time.sleep(1)
+
+        if time.ticks_diff(time.ticks_ms(), ntp_timer) > const(30 * 60 * 1000):
+            ntp_timer = time.ticks_ms()
+            try:
+                ntptime.settime()
+            except:
+                continue
 
 if __name__ == '__main__' :
     main()
