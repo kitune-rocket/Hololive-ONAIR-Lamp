@@ -84,6 +84,8 @@ def init():
     desklight.play()
     desklight.deinit()
     boot.EnableWifi()
+    ntp_task(None)  # Initial NTP sync
+
     led = SafePin(11, owner_key='init')
     led.init(Pin.OUT)
     led.off()
@@ -92,11 +94,20 @@ def led_task(htim):
     led = SafePin(11, owner_key='led_task')
     led.toggle()
 
+def ntp_task(htim):
+    try:
+        ntptime.settime()
+    except:
+        pass
+
 def main():
     init()
 
     timer = Timer(0)
     timer.init(freq=2, mode=Timer.PERIODIC, callback=led_task)
+
+    timer2 = Timer(1)
+    timer2.init(period=(1000 * 60 * 20), mode=Timer.PERIODIC, callback=ntp_task)
 
     while True :
         time.sleep(1)
