@@ -3,6 +3,7 @@ import time, ntptime
 import boot
 from safe_pin import SafePin
 from sound import NotiSound
+from vfd import Vfd
 
 class Datetime:
     @staticmethod
@@ -78,6 +79,9 @@ class Desklight:
 
 ####
 
+vfd = None # Global VFD instance
+last_vfd_update = time.time()
+
 def init():
     freq(240_000_000) # Highst clock of ESP32-S2
     desklight = Desklight(35, 33, 12, [34]) # original
@@ -89,10 +93,34 @@ def init():
     led = SafePin(11, owner_key='init')
     led.init(Pin.OUT)
     led.off()
+    global vfd
+    vfd = Vfd(DO=11, CLK=34, CS=33, RST=13, DUMMY=14)
 
 def led_task(htim):
-    led = SafePin(11, owner_key='led_task')
+    led = SafePin(10, owner_key='led_task')
     led.toggle()
+
+def clock_task(htim):
+    global vfd, last_vfd_update
+
+    current_time = time.time()
+    if current_time - last_vfd_update >= 1:
+        tm = time.localtime(current_time + 9 * 3600)  # JST
+        tm_string = f'{tm[3]:02}:{tm[4]:02}:{tm[5]:02}'
+
+        tm_before = time.localtime(last_vfd_update + 9 * 3600)  # JST
+        tm_before_string = f'{tm_before[3]:02}:{tm_before[4]:02}:{tm_before[5]:02}'
+
+        first_changed_index = 0
+        for i in range(len(tm_string)):
+            if tm_string[i] != tm_before_string[i]:
+                first_changed_index = i
+                break
+
+        vfd.write(first_changed_index, tm_string[first_changed_index:])
+
+        # update the last update time
+        last_vfd_update = current_time
 
 def ntp_task(htim):
     try:
@@ -108,6 +136,9 @@ def main():
 
     timer2 = Timer(1)
     timer2.init(period=(1000 * 60 * 20), mode=Timer.PERIODIC, callback=ntp_task)
+
+    timer3 = Timer(2)
+    timer3.init(freq=10, mode=Timer.PERIODIC, callback=clock_task)
 
     while True :
         time.sleep(1)
