@@ -143,7 +143,7 @@ class Context:
         else:
             self.youtube = None
 
-        self.desklight = Desklight(35, 33, 12, [34]) # original
+        self.desklight = Desklight(11, 33, 12, [34]) # original
     
     def log(self, msg):
         # print(f'{msg}') # for debugging
@@ -307,21 +307,18 @@ def init():
 def main():
     init()
     context = Context()
-    led = Pin(11, Pin.OUT)
-    led.off()
 
     fsm = StateMachine(context)
     fsm.add_state(IdleState())
     fsm.add_state(Waiting())
     fsm.add_state(OnAir())
 
-    fsm.start(OnAir) # For audio test run at power up. After audio playing, states fallbacks to IdleState.
+    fsm.start(IdleState) # For audio test run at power up. After audio playing, states fallbacks to IdleState.
 
     ntp_timer = time.ticks_ms()
 
     while True :
         fsm.run_cycle()
-        led.value(not led.value())
         time.sleep(1)
 
         if time.ticks_diff(time.ticks_ms(), ntp_timer) > const(30 * 60 * 1000):

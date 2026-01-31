@@ -22,7 +22,7 @@ import shutil
 # ==============================================================================
 PROJECT_NAME = "hololive"
 FIRMWARE_RELEASE = "https://micropython.org/resources/firmware/ESP32_GENERIC_S2-20250911-v1.26.1.bin"
-SERIAL_PORT = None
+SERIAL_PORT = '/dev/tty.usbmodem312101'
 DEBUG = False
 # ==============================================================================
 
