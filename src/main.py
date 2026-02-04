@@ -80,7 +80,7 @@ class Desklight:
 ####
 
 vfd = None # Global VFD instance
-last_vfd_update = time.time()
+last_vfd_update = 0
 
 def init():
     freq(240_000_000) # Highst clock of ESP32-S2
@@ -95,6 +95,7 @@ def init():
     led.off()
     global vfd
     vfd = Vfd(DO=11, CLK=34, CS=33, RST=13, DUMMY=14)
+    vfd.write(0, '00:00:00')
 
 def led_task(htim):
     led = SafePin(10, owner_key='led_task')
@@ -107,15 +108,18 @@ def clock_task(htim):
     if current_time - last_vfd_update >= 1:
         tm = time.localtime(current_time + 9 * 3600)  # JST
         tm_string = f'{tm[3]:02}:{tm[4]:02}:{tm[5]:02}'
-
-        tm_before = time.localtime(last_vfd_update + 9 * 3600)  # JST
-        tm_before_string = f'{tm_before[3]:02}:{tm_before[4]:02}:{tm_before[5]:02}'
-
         first_changed_index = 0
-        for i in range(len(tm_string)):
-            if tm_string[i] != tm_before_string[i]:
-                first_changed_index = i
-                break
+
+        if last_vfd_update == 0:
+            first_changed_index = 0
+        else:
+            tm_before = time.localtime(last_vfd_update + 9 * 3600)  # JST
+            tm_before_string = f'{tm_before[3]:02}:{tm_before[4]:02}:{tm_before[5]:02}'
+
+            for i in range(len(tm_string)):
+                if tm_string[i] != tm_before_string[i]:
+                    first_changed_index = i
+                    break
 
         vfd.write(first_changed_index, tm_string[first_changed_index:])
 
