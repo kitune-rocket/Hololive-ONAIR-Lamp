@@ -49,10 +49,14 @@ class Datetime:
 
 class Desklight:
     def __init__(self, light_pin:int, trigger_pin:int, amp_pin:int, spwm_pins:list[int]):
-        self._light = SafePin(light_pin, owner_key='desklight')
-        self._light.acquire()
-        self._light.init(Pin.OUT)
-        self.light_off()
+        # self._light = SafePin(light_pin, owner_key='desklight')
+        # self._light.acquire()
+        # self._light.init(Pin.OUT)
+        # self.light_off()
+
+        # Using GPIO0 as OPEN_DRAIN to avoid BOOT switch issue
+        self._light = Pin(light_pin, Pin.OPEN_DRAIN, Pin.PULL_UP)
+        self._light.off()
 
         self._amp = SafePin(amp_pin, owner_key='desklight')
         self._amp.acquire()
@@ -70,10 +74,10 @@ class Desklight:
         sound.deinit()
 
     def light_on(self):
-        self._light.off()
+        self._light.on() # logic low
 
     def light_off(self):
-        self._light.on()
+        self._light.off() # logic high
 
 class Holodex:
     def __init__(self, token, channel_id):
@@ -143,7 +147,7 @@ class Context:
         else:
             self.youtube = None
 
-        self.desklight = Desklight(11, 33, 12, [34]) # original
+        self.desklight = Desklight(0, 33, 12, [34]) # original
     
     def log(self, msg):
         # print(f'{msg}') # for debugging
