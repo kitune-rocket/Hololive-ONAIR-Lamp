@@ -6,6 +6,7 @@ import boot
 from fsm import *
 from safe_pin import SafePin
 from sound import NotiSound
+from vfd import Vfd
 
 class Datetime:
     @staticmethod
@@ -79,6 +80,49 @@ class Desklight:
     def light_off(self):
         self._light.off() # logic high
 
+class Clock:
+    def __init__(self, data_pin:int, clk_pin:int, cs_pin:int):
+        self._data_pin_number = data_pin
+        self._clk_pin_number = clk_pin
+        self._cs_pin_number = cs_pin
+        self._last_update = 0
+        
+        self._vfd: Vfd = None
+
+    def is_initialized(self) -> bool:
+        return self._vfd is not None
+
+    def init(self):
+        self._vfd = Vfd(self._data_pin_number, self._clk_pin_number, self._cs_pin_number, 13, 14)
+        self._vfd.write(0, '00:00:00')
+        self._last_update = 0
+
+    def deinit(self):
+        if self._vfd is not None:
+            self._vfd.deinit()
+            self._vfd = None
+
+    def update(self):
+        current = time.time()
+        if current - self._last_update < 1:
+            return
+        
+        tm = time.localtime(current + 9 * 3600)  # JST
+        tm_string = f'{tm[3]:02}:{tm[4]:02}:{tm[5]:02}'
+        first_changed_index = 0
+        
+        if self._last_update != 0:
+            last_tm = time.localtime(self._last_update + 9 * 3600)
+            last_tm_string = f'{last_tm[3]:02}:{last_tm[4]:02}:{last_tm[5]:02}'
+            for i in range(len(tm_string)):
+                if tm_string[i] != last_tm_string[i]:
+                    first_changed_index = i
+                    break
+        
+        if self._vfd is not None:
+            self._vfd.write(first_changed_index, tm_string[first_changed_index:])
+        self._last_update = current
+
 class Holodex:
     def __init__(self, token, channel_id):
         self._token = token
@@ -148,7 +192,8 @@ class Context:
             self.youtube = None
 
         self.desklight = Desklight(0, 33, 12, [34]) # original
-    
+        self.clock = Clock(11, 34, 33)
+
     def log(self, msg):
         # print(f'{msg}') # for debugging
         pass
@@ -230,7 +275,13 @@ def get_on_air(ctx):
     return ctx.on_air
 
 class IdleState(State):
+    def on_enter(self, ctx):
+        if not ctx.clock.is_initialized():
+            ctx.clock.init()
+
     def update(self, ctx):
+        ctx.clock.update() # Every update call
+
         # Every 5 minutes. Reducing API call count.
         if ctx.get_timer() < const(5 * 60 * 1000):
             return None
@@ -254,7 +305,12 @@ class Waiting(State):
             ctx.youtube.set_video_id(ctx.upcomming['id'])
             ctx.on_air = {'status': 'upcoming', 'start_scheduled': ctx.upcomming['start_scheduled']}
 
+        if not ctx.clock.is_initialized():
+            ctx.clock.init()
+
     def update(self, ctx):
+        ctx.clock.update() # Every update call
+
         # Every 10 seconds.
         if ctx.get_timer() < const(10 * 1000):
             return None
@@ -276,15 +332,19 @@ class Waiting(State):
 
 class OnAir(State):
     def on_enter(self, ctx):
+        ctx.clock.deinit()
         boot.DisableWifi()
         ctx.desklight.light_on()
         ctx.desklight.play()
         boot.EnableWifi()
+        ctx.clock.init()
 
     def on_exit(self, ctx):
         ctx.desklight.light_off()
 
     def update(self, ctx):
+        ctx.clock.update() # Every update call
+
         # Every 5 minutes. Reducing API call count.
         if ctx.get_timer() < const(5 * 60 * 1000):
             return None
@@ -323,7 +383,7 @@ def main():
 
     while True :
         fsm.run_cycle()
-        time.sleep(1)
+        time.sleep(0.1)
 
         if time.ticks_diff(time.ticks_ms(), ntp_timer) > const(30 * 60 * 1000):
             ntp_timer = time.ticks_ms()
