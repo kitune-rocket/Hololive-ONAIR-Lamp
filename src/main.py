@@ -56,8 +56,8 @@ class Desklight:
         # self.light_off()
 
         # Using GPIO0 as OPEN_DRAIN to avoid BOOT switch issue
-        self._light = Pin(light_pin, Pin.OPEN_DRAIN, Pin.PULL_UP)
-        self._light.off()
+        self._light = Pin(light_pin, Pin.OPEN_DRAIN)
+        self.light_off()
 
         self._amp = SafePin(amp_pin, owner_key='desklight')
         self._amp.acquire()
@@ -75,10 +75,10 @@ class Desklight:
         sound.deinit()
 
     def light_on(self):
-        self._light.on() # logic low
+        self._light.off() # logic low
 
     def light_off(self):
-        self._light.off() # logic high
+        self._light.on() # logic high
 
 class Clock:
     def __init__(self, data_pin:int, clk_pin:int, cs_pin:int):
